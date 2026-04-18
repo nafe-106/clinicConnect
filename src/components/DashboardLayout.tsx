@@ -12,9 +12,12 @@ import {
   Menu,
   PlusCircle,
   ChevronRight,
-  TrendingUp
+  TrendingUp,
+  Info,
+  User
 } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
+// import { Footer } from './Footer';
 import { useLoading } from '@/context/LoadingContext';
 import { Skeleton, ContentSkeleton } from './ui/Skeleton';
 
@@ -38,6 +41,7 @@ const NAV_ITEMS: NavItems = {
     { href: '/dashboard/admin/doctors', label: 'ডাক্তার তালিকা', icon: Users, color: 'from-emerald-500 to-teal-500' },
     { href: '/dashboard/admin/appointments', label: 'অ্যাপয়েন্টমেন্ট', icon: Calendar, color: 'from-orange-500 to-amber-500' },
     { href: '/dashboard/admin/reports', label: 'রিপোর্ট', icon: TrendingUp, color: 'from-amber-500 to-orange-500' },
+    { href: '/dashboard/admin/about', label: 'About', icon: Info, color: 'from-slate-500 to-slate-600' },
   ],
   doctor: [
     { href: '/dashboard/doctor', label: 'আজকের দিন', icon: LayoutDashboard, color: 'from-emerald-500 to-cyan-500' },
@@ -164,10 +168,12 @@ export default function DashboardLayout({
               <NotificationBell role={role as 'patient' | 'doctor' | 'admin'} userId={userData.id} />
             )}
             <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 bg-slate-50/80 rounded-full border border-slate-200/50">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-medium shadow-sm">
-                {getInitial(userData.name)}
-              </div>
-              <span className="text-sm font-medium text-slate-700">{userData.name}</span>
+              <Link href={`/dashboard/${role}/profile`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-medium shadow-sm">
+                  {getInitial(userData.name)}
+                </div>
+                <span className="text-sm font-medium text-slate-700">{userData.name}</span>
+              </Link>
             </div>
             <button 
               onClick={handleSignOut} 
@@ -246,7 +252,10 @@ export default function DashboardLayout({
 
         {/* User Profile Card - Fixed at very bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-3 bg-white border-t border-slate-100">
-          <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-100 shadow-sm">
+          <Link 
+            href={`/dashboard/${role}/profile`} 
+            className="flex items-center gap-3 p-3 bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-100 shadow-sm hover:opacity-80 transition-opacity"
+          >
             <div className={`
               w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold shadow
               ${role === 'admin' ? 'bg-gradient-to-br from-blue-500 to-cyan-500' : 
@@ -265,13 +274,17 @@ export default function DashboardLayout({
               </span>
             </div>
             <button 
-              onClick={handleSignOut} 
-              className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-lg transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSignOut();
+              }}
+              className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
               title="লগআউট"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-5 h-5" />
             </button>
-          </div>
+          </Link>
         </div>
       </aside>
 
@@ -351,7 +364,10 @@ export default function DashboardLayout({
 
         {/* Mobile Sidebar Footer */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100 bg-white">
-          <div className="p-4 bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-100">
+          <Link 
+            href={`/dashboard/${role}/profile`}
+            className="block p-4 bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-100"
+          >
             <div className="flex items-center gap-3">
               <div className={`
                 w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold
@@ -370,15 +386,19 @@ export default function DashboardLayout({
                   {getRoleLabel()}
                 </span>
               </div>
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSignOut();
+                }}
+                className="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-colors"
+                title="লগআউট"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
-          </div>
-          <button 
-            onClick={handleSignOut}
-            className="w-full mt-2 flex items-center justify-center gap-2 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">লগআউট</span>
-          </button>
+          </Link>
         </div>
       </aside>
 
@@ -461,6 +481,8 @@ export default function DashboardLayout({
           padding-bottom: env(safe-area-inset-bottom, 0px);
         }
       `}</style>
+      
+      {/* <Footer /> */}
     </div>
   );
 }
