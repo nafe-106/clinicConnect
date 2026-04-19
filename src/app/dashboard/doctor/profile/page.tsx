@@ -41,7 +41,15 @@ export default function DoctorProfile() {
   }, []);
 
   async function loadAppointments(doctorId: string) {
-    const today = new Date().toISOString().split('T')[0];
+    const getLocalDateString = () => {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    const today = getLocalDateString();
     
     const { data } = await supabase
       .from('appointments')

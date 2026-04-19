@@ -35,6 +35,14 @@ export default function DoctorSchedule() {
     return () => clearInterval(checkRefresh);
   }, []);
 
+  const getLocalDateString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   async function loadSchedules() {
     if (typeof window === 'undefined') {
       setLoading(false);
@@ -107,7 +115,7 @@ export default function DoctorSchedule() {
     };
   });
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
   const todaysShift = activeSchedules.find(s => s.date === todayStr);
 
   if (loading) {

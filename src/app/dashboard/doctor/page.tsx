@@ -123,8 +123,15 @@ export default function DoctorDashboard() {
       setPendingSchedules(pendingSchedulesData);
     }
 
+    const getLocalDateString = () => {
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getLocalDateString();
 
     // Only fetch today's appointments with date filter in query
     const { data: supabaseApts } = await supabase
@@ -178,7 +185,7 @@ export default function DoctorDashboard() {
       { label: 'বাকি', value: String(remaining), icon: Video, color: 'text-purple-600', bgColor: 'bg-purple-100', subValues: { total: remaining, appointment: confirmedApt, teleconsult: confirmedTele } },
     ]);
 
-    const todayDayOfWeek = today.getDay();
+    const todayDayOfWeek = new Date().getDay();
     
     const { data: todayShiftsData } = await supabase
       .from('schedules')

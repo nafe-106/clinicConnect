@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { TrendingUp, Users, Calendar, Video, Wallet } from 'lucide-react';
+import { TrendingUp, Users, Calendar, Video, Wallet, Plus, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -37,15 +40,28 @@ export default function AdminReports() {
   const [monthlyTeleconsult, setMonthlyTeleconsult] = useState(0);
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
   const [statsViewMode, setStatsViewMode] = useState<'daily' | 'monthly'>('daily');
+  const [showAddMoneyModal, setShowAddMoneyModal] = useState(false);
+  const [addedAmount, setAddedAmount] = useState('');
+  const [addingMoney, setAddingMoney] = useState(false);
+  const [dailyAddedMoney, setDailyAddedMoney] = useState(0);
+  const [monthlyAddedMoney, setMonthlyAddedMoney] = useState(0);
 
   useEffect(() => {
     loadReports();
   }, []);
 
-  async function loadReports() {
+  const getLocalDateString = () => {
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  async function loadReports() {
+    const todayStr = getLocalDateString();
+    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const firstDayStr = `${firstDayOfMonth.getFullYear()}-${String(firstDayOfMonth.getMonth() + 1).padStart(2, '0')}-${String(firstDayOfMonth.getDate()).padStart(2, '0')}`;
 
     const { data: allApts } = await supabase
       .from('appointments')
@@ -57,15 +73,24 @@ export default function AdminReports() {
       .select('id, name, consultation_fee')
       .order('name');
 
+    const { data: addedMoneyData, error: transError } = await supabase
+      .from('transactions')
+      .select('amount, date')
+      .eq('type', 'added');
+    
+    if (transError) {
+      console.log('Transactions table error:', transError);
+    }
+
     if (allApts && doctors) {
       const todayAllConfirmed = allApts.filter((a: any) => a.date === todayStr && (a.status === 'confirmed' || a.status === 'completed'));
       const todayAppointmentCompleted = allApts.filter((a: any) => a.date === todayStr && a.status === 'completed' && a.type !== 'teleconsult');
       const todayTeleconsultConfirmed = allApts.filter((a: any) => a.date === todayStr && (a.status === 'confirmed' || a.status === 'completed') && a.type === 'teleconsult');
       const todayUniquePatients = new Set(todayAllConfirmed.map((a: any) => a.patient_id)).size;
 
-      const monthAllConfirmed = allApts.filter((a: any) => a.date >= firstDayOfMonth && (a.status === 'confirmed' || a.status === 'completed'));
-      const monthAppointmentCompleted = allApts.filter((a: any) => a.date >= firstDayOfMonth && a.status === 'completed' && a.type !== 'teleconsult');
-      const monthTeleconsultConfirmed = allApts.filter((a: any) => a.date >= firstDayOfMonth && (a.status === 'confirmed' || a.status === 'completed') && a.type === 'teleconsult');
+      const monthAllConfirmed = allApts.filter((a: any) => a.date >= firstDayStr && (a.status === 'confirmed' || a.status === 'completed'));
+      const monthAppointmentCompleted = allApts.filter((a: any) => a.date >= firstDayStr && a.status === 'completed' && a.type !== 'teleconsult');
+      const monthTeleconsultConfirmed = allApts.filter((a: any) => a.date >= firstDayStr && (a.status === 'confirmed' || a.status === 'completed') && a.type === 'teleconsult');
       const monthUniquePatients = new Set(monthAllConfirmed.map((a: any) => a.patient_id)).size;
       
       const calculateEarnings = (apts: any[]) => {
@@ -91,6 +116,17 @@ export default function AdminReports() {
       setDailyTeleconsult(dailyTeleconsultAmt);
       setMonthlyTeleconsult(monthlyTeleconsultAmt);
 
+      if (addedMoneyData) {
+        const todayAdded = addedMoneyData
+          .filter((t: any) => t.date === todayStr)
+          .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+        const monthAdded = addedMoneyData
+          .filter((t: any) => t.date >= firstDayStr)
+          .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+        setDailyAddedMoney(todayAdded);
+        setMonthlyAddedMoney(monthAdded);
+      }
+
       setStats([
         { label: 'মোট অ্যাপয়েন্টমেন্ট', value: todayAllConfirmed.length, monthlyValue: monthAllConfirmed.length },
         { label: 'নিশ্চিতকৃত টেলিকনসাল্ট', value: todayTeleconsultConfirmed.length, monthlyValue: monthTeleconsultConfirmed.length },
@@ -111,6 +147,34 @@ export default function AdminReports() {
     }
 
     setLoading(false);
+  }
+
+  async function handleAddMoney() {
+    const amount = Number(addedAmount);
+    if (!amount || amount <= 0) {
+      toast.error('সঠিক পরিমাণ লিখুন');
+      return;
+    }
+
+    setAddingMoney(true);
+    const adminData = JSON.parse(localStorage.getItem('adminData') || 'null');
+
+    const { error } = await supabase.from('transactions').insert({
+      type: 'added',
+      amount: amount,
+      date: getLocalDateString(),
+      description: `অ্যাডমিন দ্বারা যোগ করা - ${adminData?.name || 'Admin'}`,
+    });
+
+    if (error) {
+      toast.error('টাকা যোগ করতে ব্যর্থ');
+    } else {
+      toast.success('টাকা যোগ হয়েছে');
+      setShowAddMoneyModal(false);
+      setAddedAmount('');
+      loadReports();
+    }
+    setAddingMoney(false);
   }
 
   if (loading) {
@@ -190,10 +254,17 @@ export default function AdminReports() {
                 <div>
                   <p className="text-emerald-100 text-sm">আয়</p>
                   <p className="text-3xl font-bold">
-                    ৳{viewMode === 'daily' ? dailyEarnings.toLocaleString() : monthlyEarnings.toLocaleString()}
+                    ৳{viewMode === 'daily' ? (dailyEarnings + dailyAddedMoney).toLocaleString() : (monthlyEarnings + monthlyAddedMoney).toLocaleString()}
                   </p>
                 </div>
               </div>
+              <button
+                onClick={() => setShowAddMoneyModal(true)}
+                className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+                title="টাকা যোগ করুন"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
               <div className="flex bg-white/10 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('daily')}
@@ -224,9 +295,13 @@ export default function AdminReports() {
                     <span className="text-emerald-100">নিশ্চিতকৃত টেলিকনসাল্ট</span>
                     <span className="font-semibold">৳{dailyTeleconsult.toLocaleString()}</span>
                   </div>
+                  <div className="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                    <span className="text-emerald-100">যোগ করা টাকা</span>
+                    <span className="font-semibold">৳{dailyAddedMoney.toLocaleString()}</span>
+                  </div>
                   <div className="flex items-center justify-between bg-white/20 rounded-lg p-3">
                     <span className="text-white font-medium">মোট</span>
-                    <span className="text-white font-bold">৳{dailyEarnings.toLocaleString()}</span>
+                    <span className="text-white font-bold">৳{(dailyEarnings + dailyAddedMoney).toLocaleString()}</span>
                   </div>
                 </>
               ) : (
@@ -243,10 +318,16 @@ export default function AdminReports() {
                       ৳{monthlyTeleconsult.toLocaleString()}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                    <span className="text-emerald-100">যোগ করা টাকা</span>
+                    <span className="font-semibold">
+                      ৳{monthlyAddedMoney.toLocaleString()}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between bg-white/20 rounded-lg p-3">
                     <span className="text-white font-medium">মোট</span>
                     <span className="text-white font-bold">
-                      ৳{monthlyEarnings.toLocaleString()}
+                      ৳{(monthlyEarnings + monthlyAddedMoney).toLocaleString()}
                     </span>
                   </div>
                 </>
@@ -282,6 +363,30 @@ export default function AdminReports() {
             )}
           </Card>
         </motion.div>
+
+        <Modal isOpen={showAddMoneyModal} onClose={() => setShowAddMoneyModal(false)} title="টাকা যোগ করুন">
+          <div className="space-y-4">
+            <div>
+              <label className="label">পরিমাণ (টাকা)</label>
+              <input
+                type="number"
+                value={addedAmount}
+                onChange={(e) => setAddedAmount(e.target.value)}
+                className="input"
+                placeholder="৳০"
+                min="0"
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={() => setShowAddMoneyModal(false)} className="flex-1">
+                বাতিল
+              </Button>
+              <Button onClick={handleAddMoney} loading={addingMoney} className="flex-1">
+                যোগ করুন
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </motion.div>
     </DashboardLayout>
   );

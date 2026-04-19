@@ -34,11 +34,18 @@ export default function AdminDashboard() {
     loadDashboardData();
   }, []);
 
-  async function loadDashboardData() {
+  const getLocalDateString = () => {
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  async function loadDashboardData() {
+    const todayStr = getLocalDateString();
+    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const firstDayStr = `${firstDayOfMonth.getFullYear()}-${String(firstDayOfMonth.getMonth() + 1).padStart(2, '0')}-${String(firstDayOfMonth.getDate()).padStart(2, '0')}`;
 
     const { data: supabaseApts, error: aptError } = await supabase
       .from('appointments')
@@ -53,7 +60,7 @@ export default function AdminDashboard() {
 
     const monthApts = (supabaseApts || []).filter((apt: any) => {
       const aptDate = apt.date || '';
-      return aptDate.toString().split('T')[0] >= firstDayOfMonth && apt.status === 'confirmed';
+      return aptDate.toString().split('T')[0] >= firstDayStr && apt.status === 'confirmed';
     });
 
     const patientIds = new Set<string>();

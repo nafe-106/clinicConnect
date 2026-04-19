@@ -78,14 +78,22 @@ export default function DoctorTeleconsult() {
     setSavingZoom(false);
   }
 
+  const getLocalDateString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   async function loadTeleconsults() {
     if (typeof window === 'undefined') return;
     
     const doctorData = JSON.parse(localStorage.getItem('doctorData') || 'null');
     if (!doctorData) return;
 
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
+    const now = new Date();
 
     const { data: teleconsults } = await supabase
       .from('appointments')
@@ -101,7 +109,7 @@ export default function DoctorTeleconsult() {
         name: apt.patients?.name || 'রোগী',
         time: apt.time,
         reason: apt.reason || 'সাধারণ সমস্যা',
-        waiting: Math.floor((today.getTime() - new Date(apt.created_at).getTime()) / 60000),
+        waiting: Math.floor((now.getTime() - new Date(apt.created_at).getTime()) / 60000),
         teleconsult_link: apt.teleconsult_link,
       }));
       setWaitingPatients(mapped);

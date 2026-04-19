@@ -142,7 +142,7 @@ export default function Register() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="input pl-12"
+                  className="input pl-14"
                   placeholder="আপনার নাম"
                   required
                 />
@@ -155,7 +155,7 @@ export default function Register() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="input pl-12"
+                  className="input pl-14"
                   placeholder="email@example.com"
                   required
                 />
@@ -168,7 +168,7 @@ export default function Register() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="input pl-12"
+                  className="input pl-14"
                   placeholder="০১১২৩৪৫৬৭৮৯"
                   required
                 />
@@ -197,7 +197,7 @@ export default function Register() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="input pl-12"
+                  className="input pl-14"
                   placeholder="পাসওয়ার্ড"
                   required
                 />
@@ -210,7 +210,7 @@ export default function Register() {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="input pl-12"
+                  className="input pl-14"
                   placeholder="পাসওয়ার্ড নিশ্চিত করুন"
                   required
                 />

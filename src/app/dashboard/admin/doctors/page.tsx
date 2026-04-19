@@ -196,7 +196,7 @@ export default function AdminDoctors() {
             placeholder="ডাক্তার খুঁজুন..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input pl-12"
+            className="input pl-14"
           />
         </div>
 

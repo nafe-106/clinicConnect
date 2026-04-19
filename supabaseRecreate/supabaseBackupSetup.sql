@@ -346,6 +346,24 @@ ALTER TABLE doctors ADD COLUMN degree TEXT;
 ALTER TABLE doctors ADD COLUMN doctor_code TEXT UNIQUE;
 ALTER TABLE appointments ADD COLUMN serial_number INTEGER;
 
+
+-- Create transactions table for tracking added money
+CREATE TABLE IF NOT EXISTS public.transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type TEXT NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  date DATE NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+
+-- Allow all operations (adjust for your setup)
+CREATE POLICY "Allow all for transactions" ON public.transactions
+  FOR ALL USING (true) WITH CHECK (true);
+
 -- ============================================================================
 -- DONE!
 -- ============================================================================

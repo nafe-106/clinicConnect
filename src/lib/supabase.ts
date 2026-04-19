@@ -10,27 +10,41 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function generateSerialNumber(doctorId: string, date: string, type: 'appointment' | 'teleconsult'): Promise<string> {
-  const { data: doctor } = await supabase
+  console.log('generateSerialNumber called:', { doctorId, date, type });
+  
+  const { data: doctor, error: docError } = await supabase
     .from('doctors')
-    .select('doctor_code')
+    .select('id, name, doctor_code')
     .eq('id', doctorId)
     .single();
 
-  const doctorCode = doctor?.doctor_code || 'DR00';
-  const typeSuffix = type === 'teleconsult' ? 'T' : 'A';
+  console.log('Doctor data:', doctor, 'error:', docError);
   
-  const { count, error } = await supabase
-    .from('appointments')
-    .select('*', { count: 'exact', head: true })
-    .eq('doctor_id', doctorId)
-    .eq('date', date);
+  if (docError) {
+    console.error('Doctor fetch error:', docError);
+  }
 
-  if (error) {
-    console.error('Error calculating serial number:', error.message);
-    throw error;
+  const doctorCode = doctor?.doctor_code || 'DR01';
+  const typeSuffix = type === 'teleconsult' ? 'T' : 'A';
+  console.log('Using doctor code:', doctorCode, 'for doctor:', doctor?.name);
+  
+  const { data: existingApts, error: countError } = await supabase
+    .from('appointments')
+    .select('id, serial_number')
+    .eq('doctor_id', doctorId)
+    .eq('date', date)
+    .in('status', ['pending', 'confirmed', 'completed']);
+
+  console.log('Existing appointments:', existingApts, 'count:', existingApts?.length, 'error:', countError);
+  
+  if (countError) {
+    console.error('Error calculating serial number:', countError.message);
   }
   
-  const nextNumber = (count || 0) + 1;
+  const count = existingApts?.length || 0;
+  const nextNumber = count + 1;
+  console.log('Next serial number calculated:', nextNumber);
+  
   return `${doctorCode}-${String(nextNumber).padStart(3, '0')}${typeSuffix}`;
 }
 

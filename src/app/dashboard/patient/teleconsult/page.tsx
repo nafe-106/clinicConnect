@@ -36,8 +36,15 @@ export default function PatientTeleconsult() {
       return;
     }
 
+    const getLocalDateString = () => {
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getLocalDateString();
 
     const { data: teleconsults, error } = await supabase
       .from('appointments')

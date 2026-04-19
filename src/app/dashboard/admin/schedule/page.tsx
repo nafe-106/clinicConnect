@@ -29,7 +29,15 @@ const formatDate = (dateStr: string) =>
     year: 'numeric',
   });
 
-const todayISO = new Date().toISOString().split('T')[0];
+const getLocalDateString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayISO = getLocalDateString();
 
 export default function AdminSchedule() {
   const [schedules, setSchedules] = useState<any[]>([]);
@@ -140,7 +148,7 @@ const filteredSchedules = schedules.filter((s) => {
             scheduleDate.setDate(scheduleDate.getDate() + 7);
           }
           
-          const dateStr = scheduleDate.toISOString().split('T')[0];
+          const dateStr = `${scheduleDate.getFullYear()}-${String(scheduleDate.getMonth() + 1).padStart(2, '0')}-${String(scheduleDate.getDate()).padStart(2, '0')}`;
           
           if (dateStr >= todayISO) {
             schedulesToInsert.push({

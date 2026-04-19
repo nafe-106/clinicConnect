@@ -77,18 +77,35 @@ export default function PatientBook() {
       .select('*')
       .eq('doctor_id', selectedDoctor.id)
       .eq('date', selectedDate)
-      .eq('status', 'active');
+      .in('status', ['active', 'confirmed']);
 
     console.log('Schedule query:', { doctorId: selectedDoctor.id, date: selectedDate, data: scheduleData });
 
     if (scheduleData && scheduleData.length > 0) {
       setSchedules(scheduleData);
-      setAvailableSlots(scheduleData.map((s: any) => ({
+      
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      const filteredSlots = scheduleData.filter((s: any) => {
+        const slotEndTime = s.end_time?.substring(0, 5);
+        if (!slotEndTime) return false;
+        
+        if (selectedDate !== todayStr) return true;
+        
+        const [endHours, endMinutes] = slotEndTime.split(':').map(Number);
+        const endMinutesTotal = endHours * 60 + endMinutes;
+        
+        return currentTimeMinutes <= endMinutesTotal;
+      }).map((s: any) => ({
         id: s.id,
         start: s.start_time?.substring(0, 5),
         end: s.end_time?.substring(0, 5),
         date: s.date,
-      })));
+      }));
+      
+      setAvailableSlots(filteredSlots);
     } else {
       setSchedules([]);
       setAvailableSlots([]);

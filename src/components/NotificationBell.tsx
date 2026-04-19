@@ -58,7 +58,15 @@ export function NotificationBell({ role, userId }: Props) {
       .lt('created_at', oneDayAgo.toISOString())
       .eq('is_read', true);
 
-    const { data } = await supabase
+    const getLocalDateString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const { data } = await supabase
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
@@ -81,7 +89,7 @@ export function NotificationBell({ role, userId }: Props) {
           .select('*')
           .eq('doctor_id', doctorData.id)
           .eq('status', 'pending')
-          .gte('date', new Date().toISOString().split('T')[0])
+          .gte('date', getLocalDateString())
           .order('date', { ascending: true })
           .limit(5);
 

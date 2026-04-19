@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Search, Filter, Check, X, Calendar, Clock, Video, MoreVertical, ChevronLeft, ChevronRight, CheckCircle, Plus } from 'lucide-react';
+import { Search, Filter, Check, X, Calendar, Clock, Video, MoreVertical, ChevronLeft, ChevronRight, CheckCircle, Plus, Zap } from 'lucide-react';
 import { supabase, generateSerialNumber } from '@/lib/supabase';
 import { setCache, getCache } from '@/lib/cache';
 import toast from 'react-hot-toast';
@@ -24,8 +24,8 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { type: "spring" as const, stiffness: 100, damping: 15 }
   }
@@ -40,23 +40,23 @@ const statusConfig = {
 };
 
 const getLocalDateString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
-  export default function AdminAppointments() {
+export default function AdminAppointments() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [filterDate, setFilterDate] = useState(getLocalDateString());
   const [filterDoctor, setFilterDoctor] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [search, setSearch] = useState('');
-  
+
   const [showWalkinModal, setShowWalkinModal] = useState(false);
   const [walkinPatient, setWalkinPatient] = useState({
     name: '',
@@ -69,12 +69,14 @@ const getLocalDateString = () => {
     reason: '',
   });
   const [creatingWalkin, setCreatingWalkin] = useState(false);
+  const [specialTimePower, setSpecialTimePower] = useState(false);
+  const [customTime, setCustomTime] = useState('');
   const [schedules, setSchedules] = useState<any[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
 
   useEffect(() => {
     loadData();
-    
+
     if (localStorage.getItem('openAppointmentModal') === 'true') {
       localStorage.removeItem('openAppointmentModal');
       setTimeout(() => setShowWalkinModal(true), 500);
@@ -85,9 +87,19 @@ const getLocalDateString = () => {
     if (walkinPatient.doctor_id && walkinPatient.date) {
       loadDoctorSchedules();
     }
-  }, [walkinPatient.doctor_id, walkinPatient.date]);
+  }, [walkinPatient.doctor_id, walkinPatient.date, specialTimePower, customTime]);
 
   async function loadDoctorSchedules() {
+    if (specialTimePower) {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const currentTime = `${hours}:${minutes}`;
+      setAvailableSlots([currentTime]);
+      setSchedules([{ id: 'custom', start_time: currentTime, end_time: currentTime }]);
+      return;
+    }
+
     const targetDate = new Date(walkinPatient.date);
     const weekEnd = new Date(targetDate);
     weekEnd.setDate(weekEnd.getDate() + 7);
@@ -117,7 +129,7 @@ const getLocalDateString = () => {
 
   async function loadData(useCache = true) {
     const today = getLocalDateString();
-    
+
     // Try cache first
     if (useCache) {
       const cached = getCache<any[]>('admin_appointments');
@@ -129,7 +141,7 @@ const getLocalDateString = () => {
         setDoctors(cachedDocs);
       }
     }
-    
+
     // Fetch fresh data
     const { data: apts, error: aptError } = await supabase
       .from('appointments')
@@ -153,14 +165,14 @@ const getLocalDateString = () => {
           start_time: schedule?.start_time || null,
           end_time: schedule?.end_time || null,
           displayStatus: apt.status === 'pending' ? 'pending' :
-                         apt.status === 'confirmed' ? 'confirmed' :
-                         apt.status === 'cancelled' ? 'cancelled' :
-                         apt.status === 'completed' ? 'completed' :
-                         getStatusFromDate(apt.date),
+            apt.status === 'confirmed' ? 'confirmed' :
+              apt.status === 'cancelled' ? 'cancelled' :
+                apt.status === 'completed' ? 'completed' :
+                  getStatusFromDate(apt.date),
         };
       });
 
-const statusOrder: Record<string, number> = {
+      const statusOrder: Record<string, number> = {
         pending: 1,
         confirmed: 2,
         completed: 3,
@@ -215,9 +227,9 @@ const statusOrder: Record<string, number> = {
 
   const formatTime = (timeStr: string) => timeStr ? timeStr.substring(0, 5) : '';
 
-const handleApprove = async (apt: any, currentStatus: string) => {
+  const handleApprove = async (apt: any, currentStatus: string) => {
     let newStatus: string;
-    
+
     if (currentStatus === 'pending') {
       newStatus = 'confirmed';
     } else if (currentStatus === 'confirmed') {
@@ -235,7 +247,7 @@ const handleApprove = async (apt: any, currentStatus: string) => {
     }
 
     let updateData: any = { status: newStatus };
-    
+
     if ((newStatus === 'confirmed' || newStatus === 'completed') && !apt.serial_number) {
       const serialNumber = await generateSerialNumber(
         apt.doctor_id,
@@ -255,7 +267,7 @@ const handleApprove = async (apt: any, currentStatus: string) => {
       toast.error('স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে');
     } else {
       requestPushPermission();
-      
+
       if (newStatus === 'confirmed') {
         await sendNotification('appointment_confirmed_patient', {
           patientId: apt.patient_id,
@@ -264,21 +276,21 @@ const handleApprove = async (apt: any, currentStatus: string) => {
           doctorName: apt.doctors?.name,
           date: apt.date,
         });
-        
+
         await sendNotification('appointment_confirmed_doctor', {
           doctorId: apt.doctor_id,
         }, {
           patientName: apt.patients?.name,
           date: apt.date,
         });
-        
+
         if (apt.type === 'teleconsult') {
           await sendNotification('teleconsult_ready_patient', {
             patientId: apt.patient_id,
           }, {
             doctorName: apt.doctors?.name,
           });
-          
+
           await sendNotification('teleconsult_ready_doctor', {
             doctorId: apt.doctor_id,
           }, {
@@ -286,7 +298,7 @@ const handleApprove = async (apt: any, currentStatus: string) => {
           });
         }
       }
-      
+
       toast.success(newStatus === 'confirmed' ? 'নিশ্চিত হয়েছে' : 'অপেক্ষায় সেট করা হয়েছে');
       loadData();
     }
@@ -297,9 +309,9 @@ const handleApprove = async (apt: any, currentStatus: string) => {
       toast.error('অ্যাপয়েন্টমেন্ট খুঁজে পাওয়া যায়নি');
       return;
     }
-    
+
     if (!confirm('এই অ্যাপয়েন্টমেন্ট বাতিল করতে চান?')) return;
-    
+
     const { error } = await supabase
       .from('appointments')
       .update({ status: 'cancelled' })
@@ -313,13 +325,13 @@ const handleApprove = async (apt: any, currentStatus: string) => {
 
   const handleCancelAppointment = async (id: string) => {
     if (!confirm('এই অ্যাপয়েন্টমেন্ট বাতিল করতে চান?')) return;
-    
+
     const { data: apt } = await supabase
       .from('appointments')
       .select('*, patients(name), doctors(name)')
       .eq('id', id)
       .single();
-    
+
     const { error } = await supabase
       .from('appointments')
       .update({ status: 'cancelled' })
@@ -327,14 +339,14 @@ const handleApprove = async (apt: any, currentStatus: string) => {
 
     if (!error && apt) {
       requestPushPermission();
-      
+
       if (apt.type === 'teleconsult') {
         await sendNotification('teleconsult_cancelled_patient', {
           patientId: apt.patient_id,
         }, {
           doctorName: apt.doctors?.name,
         });
-        
+
         await sendNotification('teleconsult_cancelled_doctor', {
           doctorId: apt.doctor_id,
         }, {
@@ -347,21 +359,21 @@ const handleApprove = async (apt: any, currentStatus: string) => {
           patientName: apt.patients?.name,
           doctorName: apt.doctors?.name,
         });
-        
+
         await sendNotification('appointment_cancelled_doctor', {
           doctorId: apt.doctor_id,
         }, {
           patientName: apt.patients?.name,
         });
       }
-      
+
       await sendNotification('appointment_cancelled_admin', {
         adminIds: [],
       }, {
         patientName: apt.patients?.name,
         doctorName: apt.doctors?.name,
       });
-      
+
       toast.success('অ্যাপয়েন্টমেন্ট বাতিল হয়েছে');
       loadData();
     }
@@ -378,7 +390,7 @@ const handleApprove = async (apt: any, currentStatus: string) => {
         .from('patients')
         .update({ status: 'completed' })
         .eq('id', apt.patient_id);
-      
+
       toast.success('অ্যাপয়েন্টমেন্ট সম্পন্ন হয়েছে');
       loadData();
     }
@@ -412,17 +424,35 @@ const handleApprove = async (apt: any, currentStatus: string) => {
         return;
       }
 
+      const getCurrentTime = () => {
+      const now = new Date();
+      return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    };
+    
+    const appointmentTime = specialTimePower
+      ? getCurrentTime()
+      : (walkinPatient.time ? walkinPatient.time.split(' - ')[0] : '09:00');
+
+      const type = walkinPatient.type === 'teleconsult' ? 'teleconsult' : 'appointment';
+      console.log('Creating appointment with:', { doctorId: walkinPatient.doctor_id, date: walkinPatient.date, type });
+
+      const serialNumber = await generateSerialNumber(walkinPatient.doctor_id, walkinPatient.date, type);
+      console.log('Generated serial:', serialNumber);
+
       const { error: aptError } = await supabase
         .from('appointments')
         .insert({
           patient_id: newPatient.id,
           doctor_id: walkinPatient.doctor_id,
           date: walkinPatient.date,
-          time: walkinPatient.time ? walkinPatient.time.split(' - ')[0] : '09:00',
+          time: appointmentTime,
           status: 'confirmed',
           type: walkinPatient.type,
           reason: walkinPatient.reason || 'ওয়াক-ইন',
+          serial_number: serialNumber,
         });
+
+      console.log('Appointment insert result:', { error: aptError });
 
       if (aptError) {
         console.error('Appointment Insert Error:', aptError);
@@ -434,6 +464,8 @@ const handleApprove = async (apt: any, currentStatus: string) => {
       toast.success('অ্যাপয়েন্টমেন্ট যোগ হয়েছে');
       setShowWalkinModal(false);
       setWalkinPatient({ name: '', phone: '', age: '', doctor_id: '', type: 'in-person', date: getLocalDateString(), time: '', reason: '' });
+      setSpecialTimePower(false);
+      setCustomTime('');
       loadData();
     } catch (err) {
       toast.error('কিছু সমস্যা হয়েছে');
@@ -465,7 +497,7 @@ const handleApprove = async (apt: any, currentStatus: string) => {
 
   return (
     <DashboardLayout role="admin">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="space-y-6 page-enter"
@@ -490,7 +522,7 @@ const handleApprove = async (apt: any, currentStatus: string) => {
                 className="!w-full"
               />
             </div>
-            
+
             <div className="min-w-[160px]">
               <label className="text-sm font-medium text-slate-600 mb-2 block">ডাক্তার</label>
               <select
@@ -541,7 +573,8 @@ const handleApprove = async (apt: any, currentStatus: string) => {
             <table className="w-full text-sm">
               <thead className="bg-slate-50/80 border-b border-slate-200">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">সিরিয়াল</th>
+                  {/* <th className="px-4 py-3 text-left font-semibold text-slate-600">No.</th> */}
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600 ">সিরিয়াল</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-600">রোগী</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-600">মোবাইল নম্বর</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-600">ডাক্তার</th>
@@ -572,9 +605,9 @@ const handleApprove = async (apt: any, currentStatus: string) => {
                       className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
                     >
                       <td className="px-4 py-3">
-                        <span className="text-slate-400 font-mono text-xs">{index + 1}</span>
-                      </td>
-                      <td className="px-4 py-3">
+                        <span className="text-slate-400 font-mono text-xs mr-2">
+                          {index + 1}
+                        </span>
                         <span className="text-slate-600 font-mono">{(apt.status === 'confirmed' || apt.status === 'completed') && apt.serial_number ? apt.serial_number : '-'}</span>
                       </td>
                       <td className="px-4 py-3">
@@ -725,22 +758,20 @@ const handleApprove = async (apt: any, currentStatus: string) => {
               <button
                 type="button"
                 onClick={() => setWalkinPatient({ ...walkinPatient, type: 'in-person' })}
-                className={`flex-1 py-2 px-4 rounded-lg border-2 transition-all ${
-                  walkinPatient.type === 'in-person'
+                className={`flex-1 py-2 px-4 rounded-lg border-2 transition-all ${walkinPatient.type === 'in-person'
                     ? 'border-primary-500 bg-primary-50 text-primary-700'
                     : 'border-slate-200 hover:border-slate-300'
-                }`}
+                  }`}
               >
                 সরাসরি
               </button>
               <button
                 type="button"
                 onClick={() => setWalkinPatient({ ...walkinPatient, type: 'teleconsult' })}
-                className={`flex-1 py-2 px-4 rounded-lg border-2 transition-all ${
-                  walkinPatient.type === 'teleconsult'
+                className={`flex-1 py-2 px-4 rounded-lg border-2 transition-all ${walkinPatient.type === 'teleconsult'
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
                     : 'border-slate-200 hover:border-slate-300'
-                }`}
+                  }`}
               >
                 ভিডিও কল
               </button>
@@ -759,11 +790,30 @@ const handleApprove = async (apt: any, currentStatus: string) => {
             </div>
             <div>
               <label className="text-sm font-medium text-slate-600 mb-2 block">সময় *</label>
+              <div className="flex items-center gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setSpecialTimePower(!specialTimePower)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${specialTimePower
+                      ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                      : 'bg-slate-100 text-slate-600 border border-slate-200'
+                    }`}
+                >
+                  <Zap className="w-4 h-4" />
+                  বিশেষ ক্ষমতা ~ সময়
+                </button>
+              </div>
+              {specialTimePower && (
+                <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded-lg mb-2">
+                  বর্তমান সময় ব্যবহার করা হবে
+                </div>
+              )}
               {availableSlots.length > 0 ? (
                 <select
                   value={walkinPatient.time}
                   onChange={(e) => setWalkinPatient({ ...walkinPatient, time: e.target.value })}
                   className="input w-full"
+                  disabled={specialTimePower}
                 >
                   <option value="">সময় নির্বাচন করুন</option>
                   {availableSlots.map((slot) => (
@@ -788,8 +838,8 @@ const handleApprove = async (apt: any, currentStatus: string) => {
             />
           </div>
 
-          <Button 
-            onClick={handleAddWalkin} 
+          <Button
+            onClick={handleAddWalkin}
             className="w-full"
             disabled={creatingWalkin}
           >
