@@ -141,12 +141,14 @@ export default function AdminReports() {
       ]);
 
       const docStats = doctors.map((doc: any) => {
-        const docApts = allApts.filter((a: any) => a.doctor_id === doc.id);
+        const filteredApts = statsViewMode === 'daily' 
+          ? allApts.filter((a: any) => a.doctor_id === doc.id && a.date === todayStr)
+          : allApts.filter((a: any) => a.doctor_id === doc.id && a.date >= firstDayStr);
         return {
           name: doc.name,
-          appointments: docApts.length,
-          teleconsult: docApts.filter((a: any) => a.type === 'teleconsult').length,
-          completed: docApts.filter((a: any) => a.status === 'completed').length,
+          appointments: filteredApts.length,
+          teleconsult: filteredApts.filter((a: any) => a.type === 'teleconsult').length,
+          completed: filteredApts.filter((a: any) => a.status === 'completed').length,
         };
       });
       setDoctorStats(docStats);

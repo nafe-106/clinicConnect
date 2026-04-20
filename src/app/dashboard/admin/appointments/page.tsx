@@ -552,16 +552,16 @@ export default function AdminAppointments() {
               </select>
             </div>
 
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-[150px] sm:min-w-[200px]">
               <label className="text-sm font-medium text-slate-600 mb-2 block">খুঁজুন</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="রোগী বা ডাক্তার খুঁজুন..."
+                  placeholder="রোগী/ডাক্তার..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="input pl-12"
+                  className="input pl-10 sm:pl-12 py-3 text-sm"
                 />
               </div>
             </div>

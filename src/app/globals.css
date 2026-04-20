@@ -233,8 +233,8 @@
 
   /* Premium Input */
   .input {
-    @apply w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-white
-           text-slate-900 placeholder:text-slate-400
+    @apply w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl border border-slate-200 bg-white
+           text-slate-900 placeholder:text-slate-400 text-sm sm:text-base
            focus:border-primary-400 focus:ring-4 focus:ring-primary-100/50 focus:outline-none
            transition-all duration-200;
   }

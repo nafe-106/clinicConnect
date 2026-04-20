@@ -132,43 +132,43 @@ export default function Register() {
           </div>
         </div>
 
-        <div className="glass-card rounded-2xl p-6 md:p-8 animate-fade-up" style={{ animationDelay: '100ms' }}>
+        <div className="glass-card rounded-2xl p-4 sm:p-6 md:p-8 animate-fade-up" style={{ animationDelay: '100ms' }}>
           {step === 1 ? (
-            <div className="space-y-5 animate-fade-up">
+            <div className="space-y-4 sm:space-y-5 animate-fade-up">
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <User className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="input pl-14"
+                  className="input pl-10 sm:pl-14 py-3 text-sm sm:text-base"
                   placeholder="আপনার নাম"
                   required
                 />
               </div>
 
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Mail className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="input pl-14"
+                  className="input pl-10 sm:pl-14 py-3 text-sm sm:text-base"
                   placeholder="email@example.com"
                   required
                 />
               </div>
 
               <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Phone className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="input pl-14"
+                  className="input pl-10 sm:pl-14 py-3 text-sm sm:text-base"
                   placeholder="০১১২৩৪৫৬৭৮৯"
                   required
                 />
@@ -179,10 +179,10 @@ export default function Register() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5 animate-fade-up">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 animate-fade-up">
               <div className="p-3 bg-slate-50 rounded-xl">
                 <p className="text-sm text-slate-600">ইমেইল</p>
-                <p className="font-medium text-slate-900">{formData.email}</p>
+                <p className="font-medium text-slate-900 truncate">{formData.email}</p>
               </div>
 
               <div className="p-3 bg-slate-50 rounded-xl">
@@ -191,26 +191,26 @@ export default function Register() {
               </div>
 
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Lock className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                 <input
                   type="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="input pl-14"
+                  className="input pl-10 sm:pl-14 py-3 text-sm sm:text-base"
                   placeholder="পাসওয়ার্ড"
                   required
                 />
               </div>
 
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Lock className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                 <input
                   type="password"
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="input pl-14"
+                  className="input pl-10 sm:pl-14 py-3 text-sm sm:text-base"
                   placeholder="পাসওয়ার্ড নিশ্চিত করুন"
                   required
                 />
