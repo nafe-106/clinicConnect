@@ -561,7 +561,7 @@ export default function AdminAppointments() {
                   placeholder="রোগী বা ডাক্তার খুঁজুন..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="input pl-10"
+                  className="input pl-12"
                 />
               </div>
             </div>

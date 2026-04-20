@@ -38,17 +38,23 @@ export default function AdminReports() {
   const [monthlyCompleted, setMonthlyCompleted] = useState(0);
   const [dailyTeleconsult, setDailyTeleconsult] = useState(0);
   const [monthlyTeleconsult, setMonthlyTeleconsult] = useState(0);
-  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
   const [statsViewMode, setStatsViewMode] = useState<'daily' | 'monthly'>('daily');
+  const [moneyViewMode, setMoneyViewMode] = useState<'daily' | 'monthly'>('daily');
   const [showAddMoneyModal, setShowAddMoneyModal] = useState(false);
   const [addedAmount, setAddedAmount] = useState('');
   const [addingMoney, setAddingMoney] = useState(false);
   const [dailyAddedMoney, setDailyAddedMoney] = useState(0);
   const [monthlyAddedMoney, setMonthlyAddedMoney] = useState(0);
+  const [cachedApts, setCachedApts] = useState<any[]>([]);
+  const [cachedDoctors, setCachedDoctors] = useState<any[]>([]);
 
   useEffect(() => {
-    loadReports();
-  }, []);
+    if (cachedApts.length === 0) {
+      loadReports();
+    } else {
+      calculateDoctorStats();
+    }
+  }, [statsViewMode]);
 
   const getLocalDateString = () => {
     const today = new Date();
@@ -144,9 +150,32 @@ export default function AdminReports() {
         };
       });
       setDoctorStats(docStats);
+      setCachedApts(allApts);
+      setCachedDoctors(doctors);
     }
 
     setLoading(false);
+  }
+
+  function calculateDoctorStats() {
+    if (cachedApts.length === 0 || cachedDoctors.length === 0) return;
+    
+    const todayStr = getLocalDateString();
+    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const firstDayStr = `${firstDayOfMonth.getFullYear()}-${String(firstDayOfMonth.getMonth() + 1).padStart(2, '0')}-${String(firstDayOfMonth.getDate()).padStart(2, '0')}`;
+
+    const docStats = cachedDoctors.map((doc: any) => {
+      const filteredApts = statsViewMode === 'daily' 
+        ? cachedApts.filter((a: any) => a.doctor_id === doc.id && a.date === todayStr)
+        : cachedApts.filter((a: any) => a.doctor_id === doc.id && a.date >= firstDayStr);
+      return {
+        name: doc.name,
+        appointments: filteredApts.length,
+        teleconsult: filteredApts.filter((a: any) => a.type === 'teleconsult').length,
+        completed: filteredApts.filter((a: any) => a.status === 'completed').length,
+      };
+    });
+    setDoctorStats(docStats);
   }
 
   async function handleAddMoney() {
@@ -172,6 +201,7 @@ export default function AdminReports() {
       toast.success('টাকা যোগ হয়েছে');
       setShowAddMoneyModal(false);
       setAddedAmount('');
+      setCachedApts([]);
       loadReports();
     }
     setAddingMoney(false);
@@ -205,7 +235,10 @@ export default function AdminReports() {
           </div>
           <div className="flex bg-slate-100 rounded-lg p-1">
             <button
-              onClick={() => setStatsViewMode('daily')}
+              onClick={() => {
+                setStatsViewMode('daily');
+                setMoneyViewMode('daily');
+              }}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
                 statsViewMode === 'daily' ? 'bg-white text-primary-600 shadow-sm' : 'text-slate-500'
               }`}
@@ -213,7 +246,10 @@ export default function AdminReports() {
               আজকের
             </button>
             <button
-              onClick={() => setStatsViewMode('monthly')}
+              onClick={() => {
+                setStatsViewMode('monthly');
+                setMoneyViewMode('monthly');
+              }}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
                 statsViewMode === 'monthly' ? 'bg-white text-primary-600 shadow-sm' : 'text-slate-500'
               }`}
@@ -254,7 +290,7 @@ export default function AdminReports() {
                 <div>
                   <p className="text-emerald-100 text-sm">আয়</p>
                   <p className="text-3xl font-bold">
-                    ৳{viewMode === 'daily' ? (dailyEarnings + dailyAddedMoney).toLocaleString() : (monthlyEarnings + monthlyAddedMoney).toLocaleString()}
+                    ৳{moneyViewMode === 'daily' ? (dailyEarnings + dailyAddedMoney).toLocaleString() : (monthlyEarnings + monthlyAddedMoney).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -267,17 +303,17 @@ export default function AdminReports() {
               </button>
               <div className="flex bg-white/10 rounded-lg p-1">
                 <button
-                  onClick={() => setViewMode('daily')}
+                  onClick={() => setMoneyViewMode('daily')}
                   className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'daily' ? 'bg-white text-emerald-600' : 'text-white/70 hover:text-white'
+                    moneyViewMode === 'daily' ? 'bg-white text-emerald-600' : 'text-white/70 hover:text-white'
                   }`}
                 >
                   আজকের
                 </button>
                 <button
-                  onClick={() => setViewMode('monthly')}
+                  onClick={() => setMoneyViewMode('monthly')}
                   className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'monthly' ? 'bg-white text-emerald-600' : 'text-white/70 hover:text-white'
+                    moneyViewMode === 'monthly' ? 'bg-white text-emerald-600' : 'text-white/70 hover:text-white'
                   }`}
                 >
                   মাসিক
@@ -285,7 +321,7 @@ export default function AdminReports() {
               </div>
             </div>
             <div className="space-y-3 pt-2">
-              {viewMode === 'daily' ? (
+              {moneyViewMode === 'daily' ? (
                 <>
                   <div className="flex items-center justify-between bg-white/10 rounded-lg p-3">
                     <span className="text-emerald-100">সম্পন্ন সরাসরি আপয়েন্টমেন্ট</span>
@@ -336,7 +372,7 @@ export default function AdminReports() {
           </Card>
 
           <Card>
-            <h2 className="font-semibold text-slate-900 mb-4">ডাক্তার অনুযায়ী (মাসিক)</h2>
+            <h2 className="font-semibold text-slate-900 mb-4">ডাক্তার অনুযায়ী ({statsViewMode === 'daily' ? 'আজকের' : 'মাসিক'})</h2>
             {doctorStats.length > 0 ? (
               <div className="space-y-3">
                 {doctorStats.map((doc) => (
