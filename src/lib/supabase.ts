@@ -33,7 +33,7 @@ export async function generateSerialNumber(doctorId: string, date: string, type:
     .select('id, serial_number')
     .eq('doctor_id', doctorId)
     .eq('date', date)
-    .in('status', ['pending', 'confirmed', 'completed']);
+    .in('status', ['confirmed', 'completed']);
 
   console.log('Existing appointments:', existingApts, 'count:', existingApts?.length, 'error:', countError);
   

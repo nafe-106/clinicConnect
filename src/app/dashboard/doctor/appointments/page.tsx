@@ -151,7 +151,7 @@ const statusOrder: Record<string, number> = {
         .eq('doctor_id', apt.doctor_id)
         .eq('date', apt.date)
         .neq('id', aptId)
-        .in('status', ['pending', 'confirmed', 'completed']);
+        .in('status', ['confirmed', 'completed']);
 
       const count = existingApts?.length || 0;
       const nextNumber = count + 1;
