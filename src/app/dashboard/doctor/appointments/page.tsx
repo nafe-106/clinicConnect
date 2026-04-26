@@ -133,9 +133,35 @@ const statusOrder: Record<string, number> = {
       .eq('id', aptId)
       .single();
 
+    let updateData: any = { status: newStatus };
+
+    if (newStatus === 'confirmed' && !apt?.serial_number) {
+      const { data: doctor } = await supabase
+        .from('doctors')
+        .select('doctor_code')
+        .eq('id', apt.doctor_id)
+        .single();
+
+      const doctorCode = doctor?.doctor_code || 'DR01';
+      const typeSuffix = apt.type === 'teleconsult' ? 'T' : 'A';
+
+      const { data: existingApts } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('doctor_id', apt.doctor_id)
+        .eq('date', apt.date)
+        .in('status', ['pending', 'confirmed', 'completed']);
+
+      const count = existingApts?.length || 0;
+      const nextNumber = count + 1;
+      const serialNumber = `${doctorCode}-${String(nextNumber).padStart(3, '0')}${typeSuffix}`;
+      
+      updateData.serial_number = serialNumber;
+    }
+
     const { error } = await supabase
       .from('appointments')
-      .update({ status: newStatus })
+      .update(updateData)
       .eq('id', aptId);
 
     if (!error && apt) {
