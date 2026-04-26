@@ -150,6 +150,7 @@ const statusOrder: Record<string, number> = {
         .select('id')
         .eq('doctor_id', apt.doctor_id)
         .eq('date', apt.date)
+        .neq('id', aptId)
         .in('status', ['pending', 'confirmed', 'completed']);
 
       const count = existingApts?.length || 0;
